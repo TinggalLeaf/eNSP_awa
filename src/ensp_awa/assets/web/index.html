@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<title>eNSP AI 助手</title>
+<script>
+window.__errs = [];
+window.addEventListener('error', function (e) { window.__errs.push(String(e.message || e)); });
+window.addEventListener('unhandledrejection', function (e) { window.__errs.push('promise: ' + String(e.reason && e.reason.message || e.reason)); });
+</script>
+<link rel="stylesheet" href="vendor/fonts.css">
+<link rel="stylesheet" href="vendor/highlight-github-dark.min.css">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div id="bg-particles"></div>
+<div class="aurora"><span></span><span></span><span></span></div>
+
+<aside id="sidebar">
+  <div class="logo">
+    <svg viewBox="0 0 48 48" fill="none" aria-hidden="true">
+      <defs>
+        <linearGradient id="lg" x1="0" y1="0" x2="48" y2="48">
+          <stop offset="0" stop-color="#22d3ee"/><stop offset="1" stop-color="#8b5cf6"/>
+        </linearGradient>
+      </defs>
+      <rect x="4" y="4" width="40" height="40" rx="11" stroke="url(#lg)" stroke-width="2.4"/>
+      <circle cx="15" cy="17" r="3.2" fill="#22d3ee"/>
+      <circle cx="33" cy="15" r="3.2" fill="#8b5cf6"/>
+      <circle cx="24" cy="33" r="3.2" fill="#34d399"/>
+      <path d="M17.5 18.5 30.5 16M16.5 19.8 22.5 30.5M31.6 17.8 26 30.5" stroke="url(#lg)" stroke-width="1.8" stroke-linecap="round"/>
+    </svg>
+    <div class="logo-text"><b>eNSP</b><i>AWA</i></div>
+  </div>
+
+  <nav id="nav">
+    <button class="nav-btn active" data-view="chat"><span class="ico">◈</span>AI 助手</button>
+    <button class="nav-btn" data-view="topo"><span class="ico">⬡</span>拓扑工坊</button>
+    <button class="nav-btn" data-view="devices"><span class="ico">⌁</span>设备终端</button>
+    <button class="nav-btn" data-view="report"><span class="ico">▤</span>实验报告</button>
+    <button class="nav-btn" data-view="settings"><span class="ico">⚙</span>设置</button>
+  </nav>
+
+  <div class="side-foot">
+    <div class="stat" id="stat-model">模型: 未配置</div>
+    <div class="stat" id="stat-sessions">会话: 0</div>
+    <div class="stat dim">grbj-ensp-mcp · MIT</div>
+  </div>
+</aside>
+
+<main id="main">
+
+  <!-- ==================== AI 助手 ==================== -->
+  <section class="view active" id="view-chat">
+    <header class="view-head">
+      <h1>AI <em>助手</em></h1>
+      <div class="head-tools">
+        <span class="chip" id="chat-format-chip">chat_completions</span>
+        <button class="btn ghost" id="btn-clear-chat">清空对话</button>
+      </div>
+    </header>
+    <div class="chat-wrap glass">
+      <div id="chat-messages"></div>
+      <div id="chat-inputbar">
+        <textarea id="chat-input" rows="2" placeholder="描述你的需求，例如：帮我搭一个 OSPF 单区域拓扑，两台 AR2220 一台 S5700，并在设备启动后自动下发配置、生成实验报告…"></textarea>
+        <div class="input-actions">
+          <button class="btn ghost" id="btn-stop" disabled>■ 停止</button>
+          <button class="btn primary" id="btn-send">发送 ⏎</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== 拓扑工坊 ==================== -->
+  <section class="view" id="view-topo">
+    <header class="view-head">
+      <h1>拓扑<em>工坊</em></h1>
+      <div class="tabs">
+        <button class="tab active" data-tab="gen">生成器</button>
+        <button class="tab" data-tab="parse">解析器</button>
+      </div>
+    </header>
+
+    <div class="tab-page active" id="tab-gen">
+      <div class="gen-grid">
+        <div class="glass panel">
+          <h3>拓扑定义</h3>
+          <label class="fld">文件名
+            <input id="topo-filename" value="my_lab.topo" spellcheck="false">
+          </label>
+          <h4>设备清单 <button class="btn mini" id="btn-add-dev">+ 设备</button></h4>
+          <table class="edit-table" id="dev-table">
+            <thead><tr><th>设备名</th><th>型号</th><th></th></tr></thead>
+            <tbody></tbody>
+          </table>
+          <h4>连线清单 <button class="btn mini" id="btn-add-link">+ 连线</button></h4>
+          <table class="edit-table" id="link-table">
+            <thead><tr><th>源</th><th>源接口</th><th>目标</th><th>目标接口</th><th></th></tr></thead>
+            <tbody></tbody>
+          </table>
+          <button class="btn primary wide" id="btn-gen-topo">⚡ 生成 .topo（GBK 落盘）</button>
+        </div>
+        <div class="glass panel">
+          <h3>画布预览</h3>
+          <svg id="topo-canvas" viewBox="0 0 1200 800" preserveAspectRatio="xMidYMid meet"></svg>
+          <div id="gen-result" class="result-box"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="tab-page" id="tab-parse">
+      <div class="glass panel">
+        <div class="row">
+          <button class="btn primary" id="btn-pick-topo">📂 选择 .topo 文件</button>
+          <span id="parse-path" class="dim path"></span>
+        </div>
+        <div id="parse-result"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== 设备终端 ==================== -->
+  <section class="view" id="view-devices">
+    <header class="view-head">
+      <h1>设备<em>终端</em></h1>
+      <div class="head-tools">
+        <button class="btn ghost" id="btn-refresh-sessions">刷新会话</button>
+        <button class="btn danger ghost" id="btn-disconnect-all">全部断开</button>
+      </div>
+    </header>
+
+    <div class="glass panel row gap">
+      <label class="fld inline">起始端口 <input id="scan-start" type="number" value="2000"></label>
+      <label class="fld inline">结束端口 <input id="scan-end" type="number" value="2100"></label>
+      <button class="btn primary" id="btn-scan">⟳ 扫描 eNSP 设备</button>
+      <span class="sep"></span>
+      <label class="fld inline">会话名 <input id="conn-name" placeholder="R1"></label>
+      <label class="fld inline">端口 <input id="conn-port" type="number" placeholder="2000"></label>
+      <button class="btn" id="btn-connect">连接</button>
+    </div>
+    <div id="scan-result" class="dim pad"></div>
+
+    <div class="dev-grid">
+      <div class="glass panel">
+        <h3>会话列表</h3>
+        <div id="session-list" class="session-list"><p class="dim">暂无会话，先扫描或手动连接。</p></div>
+      </div>
+      <div class="glass panel console-panel">
+        <h3>控制台 <span id="console-title" class="chip"></span></h3>
+        <pre id="console-out" class="console-out">选择左侧会话开始操作…</pre>
+        <div class="quick-cmds" id="quick-cmds"></div>
+        <div class="row gap">
+          <input id="cmd-input" class="grow" placeholder="输入 VRP 命令，回车发送" spellcheck="false">
+          <button class="btn primary" id="btn-send-cmd">发送</button>
+          <button class="btn" id="btn-save-cfg">保存配置</button>
+        </div>
+        <details class="batch">
+          <summary>批量下发配置（每行一条）</summary>
+          <textarea id="batch-input" rows="5" placeholder="system-view&#10;sysname R1&#10;interface GigabitEthernet0/0/0&#10; ip address 10.0.0.1 24"></textarea>
+          <button class="btn wide" id="btn-send-batch">批量下发</button>
+        </details>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== 实验报告 ==================== -->
+  <section class="view" id="view-report">
+    <header class="view-head"><h1>实验<em>报告</em></h1></header>
+    <div class="glass panel form-grid">
+      <label class="fld">报告标题
+        <input id="rep-title" value="eNSP 网络实验报告">
+      </label>
+      <label class="fld">拓扑文件（可选）
+        <span class="row gap"><input id="rep-topo" class="grow" placeholder="点击右侧按钮选择 .topo" readonly>
+        <button class="btn" id="btn-pick-rep-topo">选择</button></span>
+      </label>
+      <label class="fld">采集设备（可选，逗号分隔会话名；留空采集全部）
+        <input id="rep-devices" placeholder="R1, SW1, FW-1">
+      </label>
+      <label class="fld check"><input id="rep-pdf" type="checkbox" checked> 同时导出 PDF</label>
+      <button class="btn primary wide" id="btn-gen-report">▤ 生成实验报告</button>
+      <div id="rep-result" class="result-box"></div>
+    </div>
+  </section>
+
+  <!-- ==================== 设置 ==================== -->
+  <section class="view" id="view-settings">
+    <header class="view-head"><h1>设置</h1></header>
+    <div class="settings-grid">
+      <div class="glass panel" id="profile-cards"></div>
+      <div class="glass panel">
+        <h3>系统提示词</h3>
+        <textarea id="set-sys" rows="6"></textarea>
+        <h3>输出目录</h3>
+        <label class="fld">拓扑输出目录
+          <span class="row gap"><input id="set-topo-dir" class="grow" readonly>
+          <button class="btn" data-pick="topo">选择</button></span>
+        </label>
+        <label class="fld">报告输出目录
+          <span class="row gap"><input id="set-rep-dir" class="grow" readonly>
+          <button class="btn" data-pick="report">选择</button></span>
+        </label>
+        <label class="fld">作者署名 <input id="set-author"></label>
+        <button class="btn primary wide" id="btn-save-settings">💾 保存设置</button>
+        <div id="save-tip" class="dim"></div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<div id="toast-wrap"></div>
+
+<script src="vendor/tsparticles.bundle.min.js"></script>
+<script src="vendor/gsap.min.js"></script>
+<script src="vendor/marked.min.js"></script>
+<script src="vendor/dompurify.min.js"></script>
+<script src="vendor/highlight.min.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

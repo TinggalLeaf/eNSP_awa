@@ -1,0 +1,26 @@
+[project]
+name = "ensp-awa"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.14"
+dependencies = [
+    "defusedxml>=0.7.1",
+    "httpx>=0.28.1",
+    "markdown>=3.10.3",
+    "pillow>=12.3.0",
+    "pywebview>=6.2.1",
+    "reportlab>=5.0.1",
+]
+
+[project.scripts]
+ensp-awa = "ensp_awa:main"
+
+[build-system]
+requires = ["uv_build>=0.12.1,<0.13.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "nuitka>=4.2.1",
+]
